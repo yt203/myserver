@@ -1,0 +1,11 @@
+# 编译输出
+out/
+*.class
+
+# 编辑器缓存
+*.swp
+.idea/
+.vscode/
+
+# 日志
+*.log
