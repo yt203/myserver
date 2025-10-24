@@ -3,17 +3,10 @@ import config.ServerConf;
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
 
 public class Main {
-    static ServerConf conf;
-    static final SimpleDateFormat rfc1123 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
-    static {
-        rfc1123.setTimeZone(TimeZone.getTimeZone("GMT"));
-    }
+    static ServerConf conf;                       // 全局配置
 
     public static void main(String[] args) throws Exception {
         conf = new ServerConf("config/server.conf");
@@ -21,7 +14,7 @@ public class Main {
             System.out.println("Listening on " + conf.port);
             while (true) {
                 Socket cli = server.accept();
-                handle(cli);
+                handle(cli);                    // 单线程阻塞版
             }
         }
     }
@@ -42,42 +35,27 @@ public class Main {
             }
             String uri = parts[1];
 
-            /* 2. 读头部，取 Host 和 If-Modified-Since */
-            String host = null, ifMod = null, line;
+            /* 2. 读头部，取 Host */
+            String host = null, line;
             while ((line = in.readLine()) != null && line.length() > 0) {
                 if (line.toLowerCase().startsWith("host:"))
                     host = line.substring(5).trim();
-                else if (line.toLowerCase().startsWith("if-modified-since:"))
-                    ifMod = line.substring(18).trim();
             }
-            if (host == null) host = "zzh";
+            if (host == null) host = "zzh";          // 缺省到第一个虚拟主机
 
             /* 3. 映射本地文件 */
             String docRoot = conf.host2root.getOrDefault(host, conf.host2root.get("zzh"));
             File file = new File(docRoot, uri);
-            if (!file.isFile() || uri.contains("..")) {
+            if (!file.isFile() || uri.contains("..")) {   // 简单安全校验
                 sendError(404, "Not Found", out);
                 return;
             }
 
-            /* 4. Last-Modified / 304 逻辑 */
-            long lastMod = file.lastModified();
-            if (ifMod != null) {
-                try {
-                    long since = rfc1123.parse(ifMod).getTime();
-                    if (lastMod <= since) {          // 文件未改动
-                        send304(out);
-                        return;
-                    }
-                } catch (Exception ignored) {}      // 格式不对就忽略
-            }
-
-            /* 5. 发 200 + 文件 */
+            /* 4. 发 200 + 文件 */
             byte[] body = Files.readAllBytes(file.toPath());
             out.printf("HTTP/1.0 200 OK\r\n");
-            out.printf("Date: %s\r\n", rfc1123.format(new Date()));
+            out.printf("Date: %s\r\n", new Date());
             out.printf("Server: myserver/0.1\r\n");
-            out.printf("Last-Modified: %s\r\n", rfc1123.format(new Date(lastMod)));
             out.printf("Content-Type: text/html\r\n");
             out.printf("Content-Length: %d\r\n", body.length);
             out.printf("\r\n");
@@ -86,10 +64,7 @@ public class Main {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    static void send304(PrintStream out) {
-        out.print("HTTP/1.0 304 Not Modified\r\n\r\n");
-    }
-
+    /* 统一错误响应 */
     static void sendError(int code, String msg, PrintStream out) {
         String body = "<h1>" + code + " " + msg + "</h1>";
         out.printf("HTTP/1.0 %d %s\r\n", code, msg);
