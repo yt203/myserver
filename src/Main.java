@@ -23,7 +23,7 @@ public class Main {
 
 private static void handle(Socket s) {
     try (s; BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-         OutputStream out = s.getOutputStream()) {
+        OutputStream out = s.getOutputStream()) {
 
         String line = in.readLine();
         if (line == null || !line.startsWith("GET ")) return;
@@ -33,16 +33,16 @@ private static void handle(Socket s) {
         while ((line = in.readLine()) != null && !line.isEmpty()) {
         }
 
-            Path file = WWW.resolve(uri.substring(1));
-            if (!Files.isRegularFile(file)) {
-                byte[] body = "404 Not Found".getBytes();
-                out.write(("HTTP/1.0 404\r\nContent-Length: " + body.length + "\r\n\r\n").getBytes());
-                out.write(body); return;
-            }
+        Path file = WWW.resolve(uri.substring(1));
+        if (!Files.isRegularFile(file)) {
+            byte[] body = "404 Not Found".getBytes();
+            out.write(("HTTP/1.0 404\r\nContent-Length: " + body.length + "\r\n\r\n").getBytes());
+            out.write(body); return;
+        }
 
-            byte[] body = Files.readAllBytes(file);
-            out.write(("HTTP/1.0 200 OK\r\nContent-Length: " + body.length + "\r\n\r\n").getBytes());
-            out.write(body);
+        byte[] body = Files.readAllBytes(file);
+        out.write(("HTTP/1.0 200 OK\r\nContent-Length: " + body.length + "\r\n\r\n").getBytes());
+        out.write(body);
         } catch (IOException ignore) {}
     }
 }
