@@ -21,14 +21,17 @@ public class Main {
         }
     }
 
-    private static void handle(Socket s) {
-        try (s; BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-             OutputStream out = s.getOutputStream()) {
+private static void handle(Socket s) {
+    try (s; BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+         OutputStream out = s.getOutputStream()) {
 
-            String line = in.readLine();
-            if (line == null || !line.startsWith("GET ")) return;
-            String uri = line.split(" ")[1];
-            if (uri.equals("/")) uri = "/1mb.test";
+        String line = in.readLine();
+        if (line == null || !line.startsWith("GET ")) return;
+        String uri = line.split(" ")[1];
+        if (uri.equals("/")) uri = "/1mb.test";
+
+        while ((line = in.readLine()) != null && !line.isEmpty()) {
+        }
 
             Path file = WWW.resolve(uri.substring(1));
             if (!Files.isRegularFile(file)) {
