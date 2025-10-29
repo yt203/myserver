@@ -64,5 +64,6 @@ public class Main {
                 }
             }
         } catch (IOException ignore) {}
+        System.out.println("Request line=[" + line + "]");
     }
 }
