@@ -30,6 +30,7 @@ public class Main {
              OutputStream raw = s.getOutputStream()) {
 
             String line = in.readLine();
+            System.out.println("Request line=[" + line + "]");
             if (line == null || !line.startsWith("GET ")) return;
             String uri = line.split(" ")[1];
             if (uri.equals("/")) uri = "/1mb.test";
@@ -64,6 +65,5 @@ public class Main {
                 }
             }
         } catch (IOException ignore) {}
-        System.out.println("Request line=[" + line + "]");
     }
 }
