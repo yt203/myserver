@@ -3,6 +3,8 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 import java.util.concurrent.*;
+import java.nio.channels.FileChannel;
+import java.nio.ByteBuffer;
 
 /** 阻塞式 Thread-Per-Connection，线程池 200 */
 public class Main {
@@ -40,9 +42,21 @@ private static void handle(Socket s) {
             out.write(body); return;
         }
 
-        byte[] body = Files.readAllBytes(file);
-        out.write(("HTTP/1.0 200 OK\r\nContent-Length: " + body.length + "\r\n\r\n").getBytes());
-        out.write(body);
+        String mode = System.getProperty("mode", "0");
+        FileChannel fc   = null;
+        OutputStream raw = s.getOutputStream();
+        
+        long len = Files.size(file);
+        String hdr = "HTTP/1.0 200 OK\r\nContent-Length: " + len + "\r\n\r\n";
+        raw.write(hdr.getBytes());
+        
+        if ("0".equals(mode)) {                          // 零拷贝
+            fc = FileChannel.open(file, StandardOpenOption.READ);
+            fc.transferTo(0, len, ((SocketOutputStream) raw).getChannel());
+        } else {                                         // 传统
+            Files.copy(file, raw);
+        }
+        if (fc != null) fc.close();
         } catch (IOException ignore) {}
     }
 }
